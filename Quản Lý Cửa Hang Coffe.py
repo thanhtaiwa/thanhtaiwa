@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
+from datetime import datetime
 
 # danh sach dữ lieu
 danh_sach_nhan_vien = []
@@ -13,7 +14,7 @@ def main_window():
     root.title("Hệ Thống Quản Lý Cửa Hàng Coffee")
     root.geometry('1100x900')
 
-    
+
     button_frame = tk.Frame(root, width=300, height=700, bg="lightgray")
     button_frame.pack(side="left", fill="y")
 
@@ -283,6 +284,10 @@ def hien_thi_hoa_don(HienThi_frame):
     so_luong_entry = tk.Entry(HienThi_frame)
     so_luong_entry.grid(row=4, column=1, pady=5)
 
+    ngay_hoa_don = DateEntry(HienThi_frame, date_pattern="yyyy-mm-dd")
+    tk.Label(HienThi_frame, text="Ngày Lập Hóa Đơn:", relief="solid").grid(row=1, column=2, pady=5)
+    ngay_hoa_don.grid(row=2, column=2, pady=5)
+
     ma_giam_gia = ["GIAM10", "GIAM20", "GIAM30"]
     ma_giam_gia_combobox = ttk.Combobox(HienThi_frame, values=ma_giam_gia)
     ma_giam_gia_combobox.set("Chọn mã giảm giá")
@@ -300,7 +305,8 @@ def hien_thi_hoa_don(HienThi_frame):
             danh_sach_hoa_don_listbox.insert(
                 tk.END,
                 f"Khách Hàng: {hoa_don['Tên Khách Hàng']} | NV: {hoa_don['Nhân Viên']} | "
-                f"Thức Uống : {chi_tiet} | Tổng Tiền : {tong_tien_dinh_dang} VNĐ | Giảm Giá: {hoa_don['Giảm Giá']}%"
+                f"Thức Uống : {chi_tiet} | Tổng Tiền : {tong_tien_dinh_dang} VNĐ | Giảm Giá: {hoa_don['Giảm Giá']}% |"
+                f"Ngày Lập: {hoa_don['Ngày Lập']}"
             )
 
     def them_hoa_don():
@@ -309,6 +315,7 @@ def hien_thi_hoa_don(HienThi_frame):
         selected_items = thuc_uong_listbox.curselection()
         so_luong_text = so_luong_entry.get()
         ma_giam = ma_giam_gia_combobox.get()
+        ngay = ngay_hoa_don.get()
 
         if khach_hang and nhan_vien and selected_items and so_luong_text:
             try:
@@ -342,7 +349,8 @@ def hien_thi_hoa_don(HienThi_frame):
                     "Nhân Viên": nhan_vien,
                     "Chi Tiết Thức Uống": chi_tiet_thuc_uong,
                     "Tổng Tiền": tong_tien,
-                    "Giảm Giá": giam_gia
+                    "Giảm Giá": giam_gia,
+                    "Ngày Lập": ngay
                 })
 
                 # Cập nhật số lượng bán của nhân viên
@@ -389,22 +397,29 @@ def hien_thi_hoa_don(HienThi_frame):
 # Doanh Thu
 def hien_thi_doanh_thu(HienThi_frame):
     clear_frame(HienThi_frame)
-    tk.Label(HienThi_frame, text="Tính Doanh Thu", font=("Arial", 17, "bold"), fg="blue", bg="lightyellow", relief="groove", bd=9).grid(row=0, column=5, columnspan=4, pady=10)
+    tk.Label(HienThi_frame, text="Tính Doanh Thu", font=("Arial", 17, "bold"), fg="#7B68EE", bg="lightyellow",
+             relief="groove", bd=9).grid(row=0, column=0, columnspan=4, pady=10)
 
     ngay_bat_dau = DateEntry(HienThi_frame, date_pattern="yyyy-mm-dd")
-    tk.Label(HienThi_frame, text="Chọn Ngày Bắt Đầu:",relief="solid", bd=1).grid(row=2,column=2,pady=5)
-    ngay_bat_dau.grid(row=3,column=2, pady=20)
+    tk.Label(HienThi_frame, text="Chọn Ngày Bắt Đầu:").grid(pady=5)
+    ngay_bat_dau.grid(pady=5)
 
     ngay_ket_thuc = DateEntry(HienThi_frame, date_pattern="yyyy-mm-dd")
-    tk.Label(HienThi_frame, text="Chọn Ngày Kết Thúc:", relief="solid", bd=1).grid( row=4,column=2,pady=5)
-    ngay_ket_thuc.grid(row=5,column=2,pady=20)
+    tk.Label(HienThi_frame, text="Chọn Ngày Kết Thúc:").grid(pady=5)
+    ngay_ket_thuc.grid(pady=5)
 
     def tinh_doanh_thu():
-        tong_tien = sum(hoa_don["Tổng Tiền"] for hoa_don in invoice_list)
-        messagebox.showinfo("Doanh Thu", f"Tổng Doanh Thu: {tong_tien:,} VNĐ")
+        # Get date range from user
+        start_date = datetime.strptime(ngay_bat_dau.get(), "%Y-%m-%d")
+        end_date = datetime.strptime(ngay_ket_thuc.get(), "%Y-%m-%d")
 
-    tk.Button(HienThi_frame, text="Tính Doanh Thu", command=tinh_doanh_thu, width=20, height=2, bg="#98a77c").grid(row=6, column=2, padx=5, pady=10)  # Căn trái
+        # Filter invoices by date range
+        tong_tien = sum(hoa_don["Tổng Tiền"] for hoa_don in invoice_list if
+                        start_date <= datetime.strptime(hoa_don["Ngày Lập"], "%Y-%m-%d") <= end_date)
+        messagebox.showinfo("Doanh Thu", f"Tổng Doanh Thu trong khoảng thời gian: {tong_tien:,} VNĐ")
 
+    tk.Button(HienThi_frame, text="Tính Doanh Thu", command=tinh_doanh_thu, width=20, height=2, bg="#98a77c").grid(
+        row=6, column=2, padx=5, pady=10)
 
 main_window()
 
